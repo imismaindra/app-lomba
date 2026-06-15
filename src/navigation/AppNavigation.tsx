@@ -20,6 +20,8 @@ import EditProfileScreen from '../screens/profile-settings/EditProfileScreen';
 import HelpScreen from '../screens/profile-settings/HelpScreen';
 import LanguageSettingsScreen from '../screens/profile-settings/LanguageSettingsScreen';
 import NotificationSettingsScreen from '../screens/profile-settings/NotificationSettingsScreen';
+import LeaderboardScreen from '../screens/LeaderboardScreen';
+import MapScreen from '../screens/MapScreen';
 
 interface AppNavigatorProps {
   showToast: (message: string, type?: 'success' | 'error') => void;
@@ -51,6 +53,8 @@ const linking = {
       LanguageSettings: 'profile/language',
       Help: 'profile/help',
       AboutApp: 'profile/about',
+      Leaderboard: 'leaderboard',
+      Map: 'map',
     },
   },
 };
@@ -87,6 +91,8 @@ export default function AppNavigator({ showToast }: AppNavigatorProps) {
             <Stack.Screen name="LanguageSettings" component={LanguageSettingsScreen} />
             <Stack.Screen name="Help" component={HelpScreen} />
             <Stack.Screen name="AboutApp" component={AboutAppScreen} />
+            <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
+            <Stack.Screen name="Map" component={MapScreen} />
           </>
         ) : (
           <>

@@ -11,7 +11,7 @@ import {
   SafeAreaView,
   StatusBar,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchEcoPointData, finishRedeem, Reward, startRedeem } from '../store/ecoPointSlice';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -104,6 +104,7 @@ export default function EcoPointScreen() {
   const dispatch = useAppDispatch();
   const { token } = useAuth();
   const { userPoints, rewards, redeemingId, loading, error } = useAppSelector((state) => state.ecoPoint);
+  const navigation = useNavigation<any>();
 
   useFocusEffect(
     useCallback(() => {
@@ -148,6 +149,14 @@ export default function EcoPointScreen() {
         {/* Header Title */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Eco Poin</Text>
+          <TouchableOpacity 
+            style={styles.leaderboardButton} 
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('Leaderboard')}
+          >
+            <Ionicons name="trophy-outline" size={18} color="#1E4E2C" />
+            <Text style={styles.leaderboardButtonText}>Peringkat</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Header dengan poin utama */}
@@ -265,6 +274,9 @@ const styles = StyleSheet.create({
     paddingBottom: 110,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 8,
@@ -273,6 +285,28 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '800',
     color: '#133B1C',
+    fontFamily: 'GeistSans-Bold',
+  },
+  leaderboardButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  leaderboardButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1E4E2C',
     fontFamily: 'GeistSans-Bold',
   },
   asyncStatus: {

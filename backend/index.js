@@ -630,6 +630,54 @@ app.get('/api/eco-points', authenticateToken, async (req, res) => {
   }
 });
 
+// Route: Get Global Leaderboard
+app.get('/api/leaderboard', authenticateToken, async (req, res) => {
+  try {
+    // Get all rankings
+    const allRankings = await dbAll(`
+      SELECT 
+        u.id, 
+        u.username, 
+        COALESCE(SUM(sh.points), 0) AS total_points,
+        COUNT(sh.id) AS scan_count
+      FROM users u
+      LEFT JOIN scan_history sh ON u.id = sh.user_id
+      GROUP BY u.id
+      ORDER BY total_points DESC, u.id ASC
+    `);
+
+    // Map ranking list with ranks (1-based index)
+    const leaderboard = allRankings.map((row, index) => ({
+      rank: index + 1,
+      userId: row.id,
+      username: row.username,
+      totalPoints: Number(row.total_points),
+      scanCount: Number(row.scan_count),
+    }));
+
+    // Find current user's rank
+    const currentUserRank = leaderboard.find((item) => item.userId === req.user.id) || {
+      rank: '-',
+      userId: req.user.id,
+      username: req.user.username,
+      totalPoints: 0,
+      scanCount: 0,
+    };
+
+    // Slice leaderboard to top 10 for the list display
+    const topLeaderboard = leaderboard.slice(0, 10);
+
+    res.json({
+      success: true,
+      leaderboard: topLeaderboard,
+      currentUserRank,
+    });
+  } catch (error) {
+    console.error('Leaderboard fetch error:', error);
+    res.status(500).json({ error: 'Gagal memuat papan peringkat global' });
+  }
+});
+
 // Route: Predict Waste Image
 app.post('/api/predict-waste', authenticateToken, upload.single('image'), async (req, res) => {
   if (!req.file) {

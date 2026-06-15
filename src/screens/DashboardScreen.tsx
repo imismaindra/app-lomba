@@ -35,13 +35,22 @@ export default function DashboardScreen() {
               <Text style={styles.statusText}>Model siap!</Text>
             </View>
           </View>
-          <TouchableOpacity 
-            style={styles.leafButton} 
-            activeOpacity={0.8}
-            onPress={() => Alert.alert("EcoClassify", `Halo ${user?.username || 'Pengguna'}! Model klasifikasi sampah AI siap digunakan.`)}
-          >
-            <Ionicons name="leaf" size={22} color="#1E4E2C" />
-          </TouchableOpacity>
+          <View style={styles.headerRightActions}>
+            <TouchableOpacity 
+              style={styles.headerActionButton} 
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('Leaderboard')}
+            >
+              <Ionicons name="trophy-outline" size={20} color="#1E4E2C" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.headerActionButton} 
+              activeOpacity={0.8}
+              onPress={() => Alert.alert("EcoClassify", `Halo ${user?.username || 'Pengguna'}! Model klasifikasi sampah AI siap digunakan.`)}
+            >
+              <Ionicons name="leaf" size={20} color="#1E4E2C" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Main Card (Klasifikasi Sampah) */}
@@ -85,6 +94,27 @@ export default function DashboardScreen() {
             <Text style={styles.categorySubtitle}>5 Jenis</Text>
           </View>
         </View>
+
+        {/* Map Card (Bank Sampah Terdekat) */}
+        <TouchableOpacity style={styles.mapCard} activeOpacity={0.9} onPress={() => navigation.navigate('Map')}>
+          <View style={styles.mapCardContent}>
+            <View style={styles.mapCardLeft}>
+              <Text style={styles.mapCardTitle}>Lokasi Bank Sampah</Text>
+              <Text style={styles.mapCardSubtitle}>
+                Temukan tempat daur ulang sampah terdekat di sekitarmu
+              </Text>
+              <View style={styles.mapBadgeContainer}>
+                <Ionicons name="pin-outline" size={13} color="#1E4E2C" style={styles.mapBadgeIcon} />
+                <Text style={styles.mapBadgeText}>Cari 5 lokasi terdekat</Text>
+              </View>
+            </View>
+            <View style={styles.mapCardRight}>
+              <View style={styles.mapIconWrapper}>
+                <Ionicons name="map-outline" size={26} color="#1E4E2C" />
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
 
         {/* Supported Waste Types Section */}
         <View style={styles.sectionContainer}>
@@ -171,10 +201,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'GeistSans-SemiBold',
   },
-  leafButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerActionButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
@@ -183,6 +218,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   mainCard: {
     backgroundColor: '#1E4E2C',
@@ -387,5 +424,71 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     fontFamily: 'GeistSans-Bold',
+  },
+  mapCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 22,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#EAF2EC',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.02,
+    shadowRadius: 10,
+    elevation: 1.5,
+  },
+  mapCardContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  mapCardLeft: {
+    flex: 1,
+    marginRight: 12,
+  },
+  mapCardTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#133B1C',
+    fontFamily: 'GeistSans-Bold',
+    marginBottom: 6,
+  },
+  mapCardSubtitle: {
+    fontSize: 13,
+    color: '#64748B',
+    fontFamily: 'GeistSans-Regular',
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  mapBadgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(76, 175, 80, 0.08)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  mapBadgeIcon: {
+    marginRight: 4,
+  },
+  mapBadgeText: {
+    color: '#1E4E2C',
+    fontSize: 11,
+    fontWeight: '700',
+    fontFamily: 'GeistSans-Bold',
+  },
+  mapCardRight: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mapIconWrapper: {
+    width: 54,
+    height: 54,
+    borderRadius: 18,
+    backgroundColor: 'rgba(76, 175, 80, 0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

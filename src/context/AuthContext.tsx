@@ -126,12 +126,19 @@ const logout = async () => {
       console.log('CheckSession - storedUser:', storedUser ? 'ada' : 'tidak ada');
       
       if (storedToken && storedUser) {
-        // Verify token dengan backend
+        // Setup AbortController for fetch timeout (5 seconds)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+        }, 5000);
+
         try {
           const response = await fetch(`${API_URL}/auth/me`, {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${storedToken}` },
+            signal: controller.signal,
           });
+          clearTimeout(timeoutId);
 
           const data = await response.json();
 
@@ -140,20 +147,39 @@ const logout = async () => {
             setUser(data.user);
             console.log('Session valid, user:', data.user);
           } else {
-            // Token expired atau invalid
+            // Token expired atau invalid (bukan error jaringan)
             console.log('Session invalid, clearing storage');
             await AsyncStorage.removeItem('token');
             await AsyncStorage.removeItem('user');
             setToken(null);
             setUser(null);
           }
-        } catch (fetchError) {
+        } catch (fetchError: any) {
+          clearTimeout(timeoutId);
           console.error('Fetch error saat verify session:', fetchError);
-          // Biarkan token dan user tetap ada? Tidak, lebih aman hapus
-          await AsyncStorage.removeItem('token');
-          await AsyncStorage.removeItem('user');
-          setToken(null);
-          setUser(null);
+          
+          // Jika error dikarenakan abort (timeout) atau kegagalan jaringan (offline),
+          // gunakan data cache lokal daripada memaksa logout.
+          if (
+            fetchError.name === 'AbortError' ||
+            fetchError.message?.toLowerCase().includes('network') ||
+            fetchError.message?.toLowerCase().includes('failed to fetch')
+          ) {
+            console.log('Menggunakan sesi offline dengan cached credentials');
+            setToken(storedToken);
+            try {
+              setUser(JSON.parse(storedUser));
+            } catch (parseError) {
+              setUser({ username: 'Eco User', email: '' }); // fallback jika JSON corrupt
+            }
+          } else {
+            // Jika kesalahan lain (misal token corrupt yang ditolak oleh parser, dll)
+            console.log('Kesalahan non-jaringan, menghapus penyimpanan lokal');
+            await AsyncStorage.removeItem('token');
+            await AsyncStorage.removeItem('user');
+            setToken(null);
+            setUser(null);
+          }
         }
       }
     } catch (error) {

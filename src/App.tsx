@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Animated,
   StatusBar,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -17,12 +18,18 @@ import {
   Inter_800ExtraBold,
 } from '@expo-google-fonts/inter';
 import { Provider } from 'react-redux';
+import * as SplashScreen from 'expo-splash-screen';
 import AppNavigator from './navigation/AppNavigation';
 
 // Import AuthContext
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { store } from './store/store';
+
+// Prevent the native splash screen from auto-hiding before asset loading is complete
+SplashScreen.preventAutoHideAsync().catch(() => {
+  /* Reloading the app might trigger this warning, safe to ignore */
+});
 
 // Komponen utama yang berisi logika aplikasi
 function AppContent() {
@@ -35,6 +42,15 @@ function AppContent() {
     'GeistSans-Bold': Inter_700Bold,
     'GeistSans-ExtraBold': Inter_800ExtraBold,
   });
+
+  // Hapus splash screen jika inisialisasi selesai dan font dimuat
+  useEffect(() => {
+    if (fontsLoaded && !isLoading) {
+      SplashScreen.hideAsync().catch((err) => {
+        console.warn('Gagal menyembunyikan splash screen:', err);
+      });
+    }
+  }, [fontsLoaded, isLoading]);
 
   // Animations & Toast
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
@@ -64,12 +80,17 @@ function AppContent() {
   };
 
   if (isLoading || !fontsLoaded) {
-    return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color="#10B981" />
-        <Text style={styles.loadingText}>Memuat Echo Tech...</Text>
-      </View>
-    );
+    // Di platform web, tampilkan loading kustom.
+    // Di mobile, kembalikan null untuk menahan splash screen bawaan tanpa kedipan/flash.
+    if (Platform.OS === 'web') {
+      return (
+        <View style={[styles.container, styles.center]}>
+          <ActivityIndicator size="large" color="#10B981" />
+          <Text style={styles.loadingText}>Memuat Echo Tech...</Text>
+        </View>
+      );
+    }
+    return null;
   }
 
   return (

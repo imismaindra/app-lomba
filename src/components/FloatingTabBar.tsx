@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Component for regular tab items with premium pop-up ("timbul") micro-animations
+// Component for regular tab items with independent spring-based pop-up ("timbul") animations
 function TabItem({ isFocused, iconName, onPress, onLongPress }: any) {
   const animatedValue = useRef(new Animated.Value(isFocused ? 1 : 0)).current;
 
@@ -17,16 +17,16 @@ function TabItem({ isFocused, iconName, onPress, onLongPress }: any) {
     }).start();
   }, [isFocused]);
 
-  // Translate up by 10 pixels when active
+  // Translate up by 8 pixels when active
   const translateY = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -10],
+    outputRange: [0, -8],
   });
 
-  // Scale up by 20% when active
+  // Scale up by 15% when active
   const scale = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.2],
+    outputRange: [1, 1.15],
   });
 
   return (
@@ -66,7 +66,7 @@ function TabItem({ isFocused, iconName, onPress, onLongPress }: any) {
   );
 }
 
-// Component for the elevated Center Scan Button with pop-up & rotation animations
+// Component for the permanently centered green Scan button
 function CenterScanButton({ isFocused, onPress }: any) {
   const animatedValue = useRef(new Animated.Value(isFocused ? 1 : 0)).current;
 
@@ -79,13 +79,11 @@ function CenterScanButton({ isFocused, onPress }: any) {
     }).start();
   }, [isFocused]);
 
-  // Scales up by 15% when selected
   const scale = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.15],
+    outputRange: [1, 1.15], // Scales up by 15% when selected
   });
 
-  // Subtle rotation effect for the scanner icon when selected
   const rotate = animatedValue.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '45deg'],
@@ -114,15 +112,15 @@ export default function FloatingTabBar({ state, descriptors, navigation }: any) 
   // Calculate dynamic dimensions
   const { width: screenWidth } = Dimensions.get('window');
   const tabBarWidth = screenWidth - 40; // 20px margins on left and right
-  const centerX = tabBarWidth / 2;
+  const centerX = tabBarWidth / 2; // Fixed center coordinates
   const barHeight = 65;
   const notchH = 28;
   const r = 24; // Border radius for the floating tab bar corners
 
-  // Adjust bottom margin dynamically based on safe area insets (e.g. gesture navigation bars)
+  // Adjust bottom margin dynamically based on safe area insets
   const bottomMargin = insets.bottom > 0 ? insets.bottom + 8 : 20;
 
-  // Custom SVG path drawing a rounded rectangle with a smooth, concave scoop (notch) in the middle
+  // Path with fixed central notch
   const d = `
     M 0 ${r}
     A ${r} ${r} 0 0 1 ${r} 0
@@ -140,19 +138,19 @@ export default function FloatingTabBar({ state, descriptors, navigation }: any) 
 
   return (
     <View style={[styles.tabBarContainer, { bottom: bottomMargin }]}>
-      {/* SVG Glassmorphism Background */}
+      {/* SVG Glassmorphism Background with Fixed Central Notch */}
       <View style={styles.svgContainer}>
         <Svg width={tabBarWidth} height={barHeight}>
           <Path
             d={d}
-            fill="rgba(55, 58, 52, 0.85)" // Elegant dark translucent grey-brown background
-            stroke="rgba(255, 255, 255, 0.15)" // Subtle white border for the glassmorphism highlight
+            fill="rgba(55, 58, 52, 0.85)" // Elegant dark translucent grey-brown
+            stroke="rgba(255, 255, 255, 0.15)" // Subtle glass highlight border
             strokeWidth={1.5}
           />
         </Svg>
       </View>
 
-      {/* Interactive Icons */}
+      {/* Interactive Tabs Row */}
       <View style={styles.tabItemsContainer}>
         {state.routes.map((route: any, index: number) => {
           const { options } = descriptors[route.key];
@@ -177,21 +175,21 @@ export default function FloatingTabBar({ state, descriptors, navigation }: any) 
             });
           };
 
-          // Render spacer for the Scan tab (index 2) so the center is visually empty for the floating button
+          // Render spacer for the Scan tab (index 2) so the center is visually empty
           if (index === 2) {
             return (
               <View key={route.key} style={styles.tabItemPlaceholder} />
             );
           }
 
-          // Icon Mapping based on Mockup
+          // Icons mapping
           let iconName: any = 'home-outline';
           if (route.name === 'Dashboard') {
             iconName = isFocused ? 'home' : 'home-outline';
           } else if (route.name === 'History') {
             iconName = isFocused ? 'time' : 'time-outline';
           } else if (route.name === 'Eco Poin') {
-            iconName = isFocused ? 'school' : 'school-outline'; // Graduation cap icon
+            iconName = isFocused ? 'school' : 'school-outline';
           } else if (route.name === 'Profil') {
             iconName = isFocused ? 'person' : 'person-outline';
           }
@@ -208,7 +206,7 @@ export default function FloatingTabBar({ state, descriptors, navigation }: any) 
         })}
       </View>
 
-      {/* Floating Center Elevated Scan Button Container */}
+      {/* Permanently Centered Elevated Green Scan Button */}
       <View style={[styles.centerButtonContainer, { left: centerX - 30 }]}>
         {(() => {
           const scanRoute = state.routes[2];
@@ -320,10 +318,10 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#10B981', // Solid vibrant emerald green
+    backgroundColor: '#10B981', // Solid premium green
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.15)', // White glass-like border around the button
+    borderColor: 'rgba(255, 255, 255, 0.15)', // White highlight border
   },
 });

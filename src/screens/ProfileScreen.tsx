@@ -1,54 +1,104 @@
-import React from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
+import React, { useCallback } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, StatusBar, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchEcoPointData } from '../store/ecoPointSlice';
+
+// Level badge color
+const getLevelColor = (level: string) => {
+  switch (level) {
+    case 'Bronze':
+      return '#CD7F32';
+    case 'Silver':
+      return '#A0A0A0';
+    case 'Gold':
+      return '#FFB300';
+    case 'Platinum':
+      return '#78909C';
+    default:
+      return '#4CAF50';
+  }
+};
+
+// Unified Cross-Platform Progress Bar
+const CustomProgressBar = ({ progress, color }: { progress: number; color: string }) => {
+  return (
+    <View style={styles.progressBarContainer}>
+      <View style={[styles.progressBarFill, { width: `${progress * 100}%`, backgroundColor: color }]} />
+    </View>
+  );
+};
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
   const { t } = useLanguage();
+  const dispatch = useAppDispatch();
 
-  const stats = {
-    totalScan: 24,
-    ecoPoints: 150,
-    treesSaved: 2,
-  };
+  // Get live stats from Redux
+  const { userPoints } = useAppSelector((state) => state.ecoPoint);
 
-  const menuItems = [
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(fetchEcoPointData(token));
+    }, [dispatch, token])
+  );
+
+  const progress = userPoints.totalPoints / userPoints.nextLevelPoints;
+  const levelColor = getLevelColor(userPoints.level);
+
+  // Grouped Menu Settings
+  const accountMenuItems = [
     {
       icon: 'person-outline',
+      iconBg: '#E3F2FD',
+      iconColor: '#2196F3',
       title: t('profile.editProfile'),
       subtitle: t('profile.editProfileSubtitle'),
       onPress: () => navigation.navigate('EditProfile'),
     },
     {
       icon: 'shield-checkmark-outline',
+      iconBg: '#FFF3E0',
+      iconColor: '#FF9800',
       title: t('profile.changePassword'),
       subtitle: t('profile.changePasswordSubtitle'),
       onPress: () => navigation.navigate('ChangePassword'),
     },
     {
       icon: 'notifications-outline',
+      iconBg: '#F3E5F5',
+      iconColor: '#9C27B0',
       title: t('profile.notifications'),
       subtitle: t('profile.notificationsSubtitle'),
       onPress: () => navigation.navigate('NotificationSettings'),
     },
     {
       icon: 'language-outline',
+      iconBg: '#E8F5E9',
+      iconColor: '#4CAF50',
       title: t('profile.language'),
       subtitle: t('profile.languageSubtitle'),
       onPress: () => navigation.navigate('LanguageSettings'),
     },
+  ];
+
+  const infoMenuItems = [
     {
       icon: 'help-circle-outline',
+      iconBg: '#E0F7FA',
+      iconColor: '#00ACC1',
       title: t('profile.help'),
       subtitle: t('profile.helpSubtitle'),
       onPress: () => navigation.navigate('Help'),
     },
     {
       icon: 'information-circle-outline',
+      iconBg: '#ECEFF1',
+      iconColor: '#607D8B',
       title: t('profile.about'),
       subtitle: t('profile.aboutSubtitle'),
       onPress: () => navigation.navigate('AboutApp'),
@@ -56,82 +106,189 @@ export default function ProfileScreen() {
   ];
 
   const handleLogout = () => {
-    console.log('Tombol ditekan, langsung logout');
-    logout();
+    Alert.alert(
+      t('profile.logout') || 'Keluar Akun',
+      'Apakah Anda yakin ingin keluar dari sesi akun saat ini?',
+      [
+        {
+          text: 'Batal',
+          style: 'cancel',
+        },
+        {
+          text: 'Keluar',
+          style: 'destructive',
+          onPress: () => {
+            console.log('Logging out user...');
+            logout();
+          },
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F4FAF6" />
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContainer}>
-        {/* Header Title */}
-        <View style={styles.headerSection}>
-          <Text style={styles.headerTitle}>{t('profile.title')}</Text>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      
+      <ScrollView 
+        style={styles.container} 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={styles.scrollContainer}
+      >
+        {/* Integrated Forest Green Profile Header (Inside ScrollView) */}
+        <View style={styles.headerPanel}>
+          {/* Abstract background decorative shape */}
+          <View style={styles.headerCircleDecorator} />
+          
+          <View style={styles.headerTopRow}>
+            <Text style={styles.headerTitle}>{t('profile.title')}</Text>
+          </View>
+          
+          <View style={styles.profileRow}>
+            <View style={styles.avatarContainer}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>
+                  {user?.username ? user.username[0].toUpperCase() : 'U'}
+                </Text>
+              </View>
+              <View style={styles.onlineBadge} />
+            </View>
+            
+            <View style={styles.profileInfo}>
+              <Text style={styles.username}>{user?.username || t('profile.defaultUser')}</Text>
+              <Text style={styles.email}>{user?.email || 'email@example.com'}</Text>
+              
+              <View style={[styles.membershipBadge, { backgroundColor: 'rgba(255, 255, 255, 0.12)', borderColor: 'rgba(255, 255, 255, 0.2)' }]}>
+                <Ionicons name="medal" size={12} color={levelColor} style={{ marginRight: 4 }} />
+                <Text style={[styles.membershipText, { color: '#FFFFFF' }]}>{userPoints.level} Member</Text>
+              </View>
+            </View>
+          </View>
         </View>
 
-        {/* User Card */}
-        <View style={styles.userCard}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {user?.username ? user.username[0].toUpperCase() : 'U'}
+        {/* Papan Dampak Lingkungan (Eco Contribution Board - No more clipping issues!) */}
+        <View style={styles.impactCard}>
+          <Text style={styles.impactTitle}>Kontribusi Hijau Anda</Text>
+          
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <View style={[styles.statIconWrapper, { backgroundColor: 'rgba(76, 175, 80, 0.08)' }]}>
+                <Ionicons name="scan-outline" size={18} color="#4CAF50" />
+              </View>
+              <Text style={styles.statNumber}>{userPoints.itemsRecycled}</Text>
+              <Text style={styles.statLabel}>{t('profile.totalScan')}</Text>
+            </View>
+            
+            <View style={styles.statDivider} />
+            
+            <View style={styles.statCard}>
+              <View style={[styles.statIconWrapper, { backgroundColor: 'rgba(255, 179, 0, 0.08)' }]}>
+                <Ionicons name="leaf-outline" size={18} color="#FFB300" />
+              </View>
+              <Text style={styles.statNumber}>{userPoints.totalPoints}</Text>
+              <Text style={styles.statLabel}>{t('profile.ecoPoints')}</Text>
+            </View>
+            
+            <View style={styles.statDivider} />
+            
+            <View style={styles.statCard}>
+              <View style={[styles.statIconWrapper, { backgroundColor: 'rgba(33, 150, 243, 0.08)' }]}>
+                <Ionicons name="cloud-outline" size={18} color="#2196F3" />
+              </View>
+              <Text style={styles.statNumber}>{userPoints.co2Saved} kg</Text>
+              <Text style={styles.statLabel}>CO₂ Reduksi</Text>
+            </View>
+          </View>
+
+          {/* Level Progress Bar inside Profile */}
+          <View style={styles.progressSection}>
+            <View style={styles.progressLabels}>
+              <Text style={styles.progressLabelLeft}>{userPoints.level}</Text>
+              <Text style={styles.progressLabelRight}>
+                {userPoints.totalPoints} / {userPoints.nextLevelPoints} Poin
               </Text>
             </View>
-            <View style={styles.onlineBadge} />
-          </View>
-          <Text style={styles.username}>{user?.username || t('profile.defaultUser')}</Text>
-          <Text style={styles.email}>{user?.email || 'email@example.com'}</Text>
-        </View>
-
-        {/* Stats Grid */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <View style={[styles.statIconWrapper, styles.scanIconBg]}>
-              <Ionicons name="scan-outline" size={20} color="#4CAF50" />
-            </View>
-            <Text style={styles.statNumber}>{stats.totalScan}</Text>
-            <Text style={styles.statLabel}>{t('profile.totalScan')}</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statCard}>
-            <View style={[styles.statIconWrapper, styles.leafIconBg]}>
-              <Ionicons name="leaf-outline" size={20} color="#4CAF50" />
-            </View>
-            <Text style={styles.statNumber}>{stats.ecoPoints}</Text>
-            <Text style={styles.statLabel}>{t('profile.ecoPoints')}</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statCard}>
-            <View style={[styles.statIconWrapper, styles.treeIconBg]}>
-              <Ionicons name="rose-outline" size={20} color="#4CAF50" />
-            </View>
-            <Text style={styles.statNumber}>{stats.treesSaved}</Text>
-            <Text style={styles.statLabel}>{t('profile.tree')}</Text>
+            <CustomProgressBar progress={Math.min(progress, 1)} color={levelColor} />
+            <Text style={styles.progressSubtitle}>
+              Tingkat berikutnya: {userPoints.nextLevelName} ({userPoints.nextLevelPoints - userPoints.totalPoints} poin lagi)
+            </Text>
           </View>
         </View>
 
-        {/* Menu List */}
-        <View style={styles.menuContainer}>
-          <Text style={styles.menuTitle}>{t('profile.accountSettings')}</Text>
-          {menuItems.map((item, index) => (
-            <TouchableOpacity key={index} style={styles.menuItem} onPress={item.onPress} activeOpacity={0.7}>
-              <View style={styles.menuIcon}>
-                <Ionicons name={item.icon as any} size={22} color="#4CAF50" />
+        {/* Group 1: Account Settings */}
+        <View style={styles.settingsGroup}>
+          <Text style={styles.groupHeader}>{t('profile.accountSettings')}</Text>
+          <View style={styles.groupContent}>
+            {accountMenuItems.map((item, index) => (
+              <TouchableOpacity 
+                key={index} 
+                style={[
+                  styles.settingsRow,
+                  index === accountMenuItems.length - 1 && styles.noBottomBorder
+                ]} 
+                onPress={item.onPress} 
+                activeOpacity={0.7}
+              >
+                <View style={[styles.menuIconWrapper, { backgroundColor: item.iconBg }]}>
+                  <Ionicons name={item.icon as any} size={18} color={item.iconColor} />
+                </View>
+                <View style={styles.menuText}>
+                  <Text style={styles.menuItemTitle}>{item.title}</Text>
+                  <Text style={styles.menuItemSubtitle}>{item.subtitle}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Group 2: Help & Info */}
+        <View style={styles.settingsGroup}>
+          <Text style={styles.groupHeader}>Informasi & Bantuan</Text>
+          <View style={styles.groupContent}>
+            {infoMenuItems.map((item, index) => (
+              <TouchableOpacity 
+                key={index} 
+                style={[
+                  styles.settingsRow,
+                  index === infoMenuItems.length - 1 && styles.noBottomBorder
+                ]} 
+                onPress={item.onPress} 
+                activeOpacity={0.7}
+              >
+                <View style={[styles.menuIconWrapper, { backgroundColor: item.iconBg }]}>
+                  <Ionicons name={item.icon as any} size={18} color={item.iconColor} />
+                </View>
+                <View style={styles.menuText}>
+                  <Text style={styles.menuItemTitle}>{item.title}</Text>
+                  <Text style={styles.menuItemSubtitle}>{item.subtitle}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Integrated Logout Item */}
+        <View style={styles.settingsGroup}>
+          <View style={styles.groupContent}>
+            <TouchableOpacity 
+              style={[styles.settingsRow, styles.noBottomBorder]} 
+              onPress={handleLogout} 
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuIconWrapper, { backgroundColor: '#FEE2E2' }]}>
+                <Ionicons name="log-out-outline" size={18} color="#EF4444" />
               </View>
-              <View style={styles.menuContent}>
-                <Text style={styles.menuItemTitle}>{item.title}</Text>
-                <Text style={styles.menuItemSubtitle}>{item.subtitle}</Text>
+              <View style={styles.menuText}>
+                <Text style={[styles.menuItemTitle, { color: '#EF4444' }]}>{t('profile.logout')}</Text>
+                <Text style={styles.menuItemSubtitle}>Keluar dari sesi akun Anda saat ini</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
+              <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
             </TouchableOpacity>
-          ))}
+          </View>
         </View>
-
-        {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
-          <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-          <Text style={styles.logoutText}>{t('profile.logout')}</Text>
-        </TouchableOpacity>
 
         <Text style={styles.versionText}>Echo Tech v1.0.0</Text>
       </ScrollView>
@@ -142,124 +299,157 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F4FAF6',
+    backgroundColor: '#1E4E2C', // Green safe area top to match header
   },
   container: {
     flex: 1,
+    backgroundColor: '#F4FAF6', // Rest of screen has the soft green background
   },
   scrollContainer: {
-    paddingBottom: 110,
+    paddingBottom: 140, // Expanded padding to clear FloatingTabBar completely
   },
-  headerSection: {
+  headerPanel: {
+    backgroundColor: '#1E4E2C',
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
+    paddingTop: Platform.OS === 'ios' ? 44 : 32, // Accommodate status bar
+    paddingBottom: 48,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  headerCircleDecorator: {
+    position: 'absolute',
+    right: -30,
+    top: -30,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    marginTop: 8,
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#133B1C',
+    fontSize: 26,
+    fontWeight: '900',
+    color: '#FFFFFF',
     fontFamily: 'GeistSans-Bold',
   },
-  userCard: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginTop: 12,
-    padding: 24,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#EAF2EC',
+  profileRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.02,
-    shadowRadius: 10,
-    elevation: 1.5,
+    gap: 16,
   },
   avatarContainer: {
     position: 'relative',
-    marginBottom: 14,
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#1E4E2C',
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 3,
   },
   avatarText: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#1E4E2C',
     fontFamily: 'GeistSans-Bold',
   },
   onlineBadge: {
     position: 'absolute',
     bottom: 2,
     right: 2,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: '#4CAF50',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
+    borderWidth: 2.5,
+    borderColor: '#1E4E2C',
+  },
+  profileInfo: {
+    flex: 1,
+    justifyContent: 'center',
   },
   username: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#1C1C1C',
-    marginBottom: 4,
+    color: '#FFFFFF',
     fontFamily: 'GeistSans-Bold',
+    marginBottom: 2,
   },
   email: {
     fontSize: 13,
-    color: '#757575',
+    color: 'rgba(255, 255, 255, 0.75)',
     fontFamily: 'GeistSans-Regular',
+    marginBottom: 8,
   },
-  statsContainer: {
+  membershipBadge: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 16,
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+  },
+  membershipText: {
+    fontSize: 10,
+    fontWeight: '800',
+    fontFamily: 'GeistSans-Bold',
+  },
+  impactCard: {
     backgroundColor: '#FFFFFF',
-    marginTop: 16,
     marginHorizontal: 20,
-    borderRadius: 20,
+    marginTop: -24, // Sits overlapping green header curve perfectly
+    borderRadius: 24,
+    padding: 20,
     borderWidth: 1,
     borderColor: '#EAF2EC',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.02,
-    shadowRadius: 10,
-    elevation: 1.5,
+    shadowColor: '#1E4E2C',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  impactTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#133B1C',
+    textTransform: 'uppercase',
+    marginBottom: 16,
+    fontFamily: 'GeistSans-Bold',
+    letterSpacing: 0.5,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    marginBottom: 20,
   },
   statCard: {
     alignItems: 'center',
     flex: 1,
   },
   statIconWrapper: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
-  },
-  scanIconBg: {
-    backgroundColor: 'rgba(76, 175, 80, 0.06)',
-  },
-  leafIconBg: {
-    backgroundColor: 'rgba(76, 175, 80, 0.06)',
-  },
-  treeIconBg: {
-    backgroundColor: 'rgba(76, 175, 80, 0.06)',
+    marginBottom: 6,
   },
   statNumber: {
     fontSize: 18,
@@ -270,53 +460,95 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 11,
     color: '#757575',
-    marginTop: 2,
     fontFamily: 'GeistSans-Medium',
+    marginTop: 2,
   },
   statDivider: {
     width: 1,
-    height: 40,
-    alignSelf: 'center',
-    backgroundColor: '#EAF2EC',
+    height: 32,
+    backgroundColor: '#F1F5F9',
   },
-  menuContainer: {
-    backgroundColor: '#FFFFFF',
-    marginTop: 16,
-    marginHorizontal: 20,
-    borderRadius: 20,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#EAF2EC',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.02,
-    shadowRadius: 10,
-    elevation: 1.5,
+  progressSection: {
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    paddingTop: 16,
   },
-  menuTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#757575',
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 6,
+  progressLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  progressLabelLeft: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#1E4E2C',
     fontFamily: 'GeistSans-Bold',
   },
-  menuItem: {
+  progressLabelRight: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#757575',
+    fontFamily: 'GeistSans-Bold',
+  },
+  progressBarContainer: {
+    height: 6,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  progressSubtitle: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontFamily: 'GeistSans-Regular',
+    marginTop: 6,
+  },
+  settingsGroup: {
+    marginHorizontal: 20,
+    marginTop: 20,
+  },
+  groupHeader: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    paddingLeft: 4,
+    fontFamily: 'GeistSans-Bold',
+    letterSpacing: 0.5,
+  },
+  groupContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#EAF2EC',
+    overflow: 'hidden',
+  },
+  settingsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5',
+    borderBottomColor: '#F8FAFC',
   },
-  menuIcon: {
-    width: 32,
-    alignItems: 'flex-start',
+  noBottomBorder: {
+    borderBottomWidth: 0,
   },
-  menuContent: {
+  menuIconWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  menuText: {
     flex: 1,
-    marginLeft: 4,
   },
   menuItemTitle: {
     fontSize: 15,
@@ -325,41 +557,16 @@ const styles = StyleSheet.create({
     fontFamily: 'GeistSans-Bold',
   },
   menuItemSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#757575',
-    marginTop: 2,
     fontFamily: 'GeistSans-Regular',
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FEF2F2',
-    marginHorizontal: 20,
-    marginTop: 24,
-    marginBottom: 16,
-    paddingVertical: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#FEE2E2',
-    shadowColor: '#EF4444',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.02,
-    shadowRadius: 8,
-    elevation: 1,
-  },
-  logoutText: {
-    color: '#EF4444',
-    fontSize: 15,
-    fontWeight: '700',
-    marginLeft: 8,
-    fontFamily: 'GeistSans-Bold',
+    marginTop: 2,
   },
   versionText: {
     textAlign: 'center',
     color: '#94A3B8',
     fontSize: 12,
-    marginTop: 8,
+    marginTop: 24,
     marginBottom: 20,
     fontFamily: 'GeistSans-Regular',
   },

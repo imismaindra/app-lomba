@@ -62,6 +62,7 @@ const linking = {
 function MainTabs() {
   return (
     <Tab.Navigator
+      initialRouteName="Dashboard"
       tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
         headerShown: false,

@@ -1,16 +1,16 @@
-Test loss: 0.4212
-Test accuracy: 0.8584
+Test loss: 0.4232
+Test accuracy: 0.8669
 
                precision    recall  f1-score   support
 
-      Organic     0.9057    0.9600    0.9320       150
-botol plastik     0.8421    0.8421    0.8421       152
-         kaca     0.8905    0.8133    0.8502       150
-       kardus     0.9400    0.9400    0.9400       150
-       kertas     0.8052    0.8267    0.8158       150
-        metal     0.8493    0.8267    0.8378       150
-      plastic     0.7792    0.8000    0.7895       150
+      Organic     0.9276    0.9400    0.9338       150
+botol plastik     0.8526    0.8750    0.8636       152
+         kaca     0.9167    0.8067    0.8582       150
+       kardus     0.9346    0.9533    0.9439       150
+       kertas     0.8299    0.8133    0.8215       150
+        metal     0.8217    0.8600    0.8404       150
+      plastic     0.7935    0.8200    0.8066       150
 
-     accuracy                         0.8584      1052
-    macro avg     0.8589    0.8584    0.8582      1052
- weighted avg     0.8588    0.8584    0.8582      1052
+     accuracy                         0.8669      1052
+    macro avg     0.8681    0.8669    0.8669      1052
+ weighted avg     0.8681    0.8669    0.8668      1052

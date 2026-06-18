@@ -15,14 +15,14 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "com.rdnabiyyu213.CyberWasteApp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-font",
-      "expo-status-bar",
       [
         "expo-splash-screen",
         {
@@ -31,6 +31,11 @@
           "backgroundColor": "#ffffff"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "d2d2b535-26fb-4496-865d-13305342b540"
+      }
+    }
   }
 }

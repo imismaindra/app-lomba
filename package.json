@@ -39,6 +39,10 @@
     "react-redux": "^9.3.0",
     "typescript": "~5.9.2"
   },
+  "overrides": {
+    "react-native": "0.83.6",
+    "@react-native/virtualized-lists": "0.83.6"
+  },
   "private": true,
   "devDependencies": {
     "babel-preset-expo": "~55.0.8"

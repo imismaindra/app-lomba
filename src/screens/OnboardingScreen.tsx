@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../context/AuthContext';
 
 interface Slide {
   title: string;
@@ -44,6 +45,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function OnboardingScreen() {
   const navigation = useNavigation<any>();
+  const { completeOnboarding } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const slideX = useRef(new Animated.Value(0)).current;
@@ -62,8 +64,9 @@ export default function OnboardingScreen() {
         duration: 220,
         useNativeDriver: true,
       }),
-    ]).start(() => {
+    ]).start(async () => {
       setIsAnimating(false);
+      await completeOnboarding();
       navigation.navigate('Login');
     });
   };

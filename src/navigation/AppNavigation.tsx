@@ -80,7 +80,7 @@ function MainTabs({ showToast }: AppNavigatorProps) {
 }
 
 export default function AppNavigator({ showToast }: AppNavigatorProps) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, hasSeenOnboarding } = useAuth();
 
   return (
     <NavigationContainer linking={linking}>
@@ -101,7 +101,9 @@ export default function AppNavigator({ showToast }: AppNavigatorProps) {
           </>
         ) : (
           <>
-            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+            {!hasSeenOnboarding && (
+              <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+            )}
             <Stack.Screen name="Login">
               {() => <LoginScreen showToast={showToast} />}
             </Stack.Screen>

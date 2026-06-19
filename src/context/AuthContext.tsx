@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect } from 'react';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../../config';
 
@@ -14,10 +15,12 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  hasSeenOnboarding: boolean;
   login: (emailOrUsername: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (username: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   checkSession: () => Promise<void>;
+  completeOnboarding: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,6 +29,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean>(false);
+
+  const completeOnboarding = async () => {
+    try {
+      await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+      setHasSeenOnboarding(true);
+    } catch (error) {
+      console.error('Error saving onboarding status:', error);
+    }
+  };
 
   const login = async (emailOrUsername: string, password: string) => {
     try {
@@ -106,7 +119,7 @@ const logout = async () => {
     await AsyncStorage.removeItem('user');
     
     // KHUSUS WEB
-    if (typeof window !== 'undefined') {
+    if (Platform.OS === 'web') {
       localStorage.clear();  // Clear semua localStorage
       sessionStorage.clear();
       console.log('LocalStorage dan SessionStorage dibersihkan');
@@ -127,6 +140,10 @@ const logout = async () => {
   const checkSession = useCallback(async () => {
     try {
       setIsLoading(true);
+      const storedOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
+      if (storedOnboarding === 'true') {
+        setHasSeenOnboarding(true);
+      }
       const storedToken = await AsyncStorage.getItem('token');
       const storedUser = await AsyncStorage.getItem('user');
       
@@ -208,10 +225,12 @@ const logout = async () => {
         token,
         isLoading,
         isAuthenticated: !!user && !!token,
+        hasSeenOnboarding,
         login,
         register,
         logout,
         checkSession,
+        completeOnboarding,
       }}
     >
       {children}

@@ -19,9 +19,11 @@ import { fetchEcoPointData, finishRedeem, Reward, startRedeem } from '../store/e
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { useAuth } from '../context/AuthContext';
 
-// Enable LayoutAnimation for Android
+// Enable LayoutAnimation for Android (only if not running on New Architecture / Fabric)
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
+  if (!(global as any).nativeFabricUIScheduler) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  }
 }
 
 // Level badge color

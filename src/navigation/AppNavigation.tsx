@@ -34,7 +34,7 @@ const linking = {
   prefixes: ['http://localhost:8081'],
   config: {
     screens: {
-      Onboarding: '',
+      Onboarding: 'onboarding',
       Login: 'login',
       Register: 'register',
       MainTabs: {

@@ -65,6 +65,14 @@ const getRewardCategory = (rewardId: number) => {
   return 'Digital';
 };
 
+const getRewardIconName = (icon: string) => {
+  if (icon === 'cup-outline') {
+    return 'water-outline';
+  }
+
+  return icon;
+};
+
 // Unified Cross-Platform Progress Bar
 const CustomProgressBar = ({ progress, color }: { progress: number; color: string }) => {
   return (
@@ -106,7 +114,7 @@ const RewardCard = ({
         isAvailable && !isLocked ? styles.rewardIconActive : styles.rewardIconDisabled
       ]}>
         <Ionicons 
-          name={reward.icon as any} 
+          name={getRewardIconName(reward.icon) as any} 
           size={26} 
           color={isAvailable && !isLocked ? '#4CAF50' : '#94A3B8'} 
         />
@@ -409,7 +417,7 @@ export default function EcoPointScreen() {
                 {/* Reward Card Preview */}
                 <View style={styles.previewCard}>
                   <View style={[styles.previewIconWrapper, { backgroundColor: 'rgba(76, 175, 80, 0.08)' }]}>
-                    <Ionicons name={selectedReward.icon as any} size={32} color="#4CAF50" />
+                    <Ionicons name={getRewardIconName(selectedReward.icon) as any} size={32} color="#4CAF50" />
                   </View>
                   <Text style={styles.previewName}>{selectedReward.name}</Text>
                   <Text style={styles.previewDescription}>{selectedReward.description}</Text>

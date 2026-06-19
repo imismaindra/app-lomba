@@ -104,7 +104,7 @@ const initialState: EcoPointState = {
       name: 'E-Tumbler',
       description: 'Tumbler stainless steel',
       points: 300,
-      icon: 'cup-outline',
+      icon: 'water-outline',
       available: false,
     },
     {

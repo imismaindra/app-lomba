@@ -147,6 +147,44 @@ export const fetchEcoPointData = createAsyncThunk<EcoPointResponse, string | nul
   }
 );
 
+export const redeemReward = createAsyncThunk<
+  { success: boolean; availablePoints: number; rewardId: number },
+  { token: string | null; rewardId: number },
+  { rejectValue: string }
+>(
+  'ecoPoint/redeemReward',
+  async ({ token, rewardId }, thunkAPI) => {
+    try {
+      if (!token) {
+        return thunkAPI.rejectWithValue('Silakan login untuk menukarkan poin');
+      }
+
+      const response = await fetch(`${API_URL}/eco-points/redeem`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ rewardId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        return thunkAPI.rejectWithValue(data.error || 'Gagal memproses penukaran poin');
+      }
+
+      return {
+        success: true,
+        availablePoints: data.availablePoints,
+        rewardId,
+      };
+    } catch (error) {
+      return thunkAPI.rejectWithValue('Gagal terhubung ke server');
+    }
+  }
+);
+
 const ecoPointSlice = createSlice({
   name: 'ecoPoint',
   initialState,
@@ -195,6 +233,18 @@ const ecoPointSlice = createSlice({
           typeof action.payload === 'string'
             ? action.payload
             : action.error.message || 'Gagal memuat data Eco Poin';
+      })
+      .addCase(redeemReward.pending, (state, action) => {
+        state.redeemingId = action.meta.arg.rewardId;
+        state.error = null;
+      })
+      .addCase(redeemReward.fulfilled, (state, action) => {
+        state.redeemingId = null;
+        state.userPoints.totalPoints = action.payload.availablePoints;
+      })
+      .addCase(redeemReward.rejected, (state, action) => {
+        state.redeemingId = null;
+        state.error = action.payload || 'Gagal menukarkan poin';
       });
   },
 });

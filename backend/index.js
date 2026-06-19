@@ -97,6 +97,23 @@ function createTables() {
       console.log('Scan history table ready.');
     }
   });
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS redeemed_rewards (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      reward_id INTEGER NOT NULL,
+      points INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `, (err) => {
+    if (err) {
+      console.error('Error creating redeemed_rewards table:', err.message);
+    } else {
+      console.log('Redeemed rewards table ready.');
+    }
+  });
 }
 
 // Database helper functions wrapped in Promises
@@ -609,15 +626,25 @@ app.get('/api/eco-points', authenticateToken, async (req, res) => {
       WHERE user_id = ?
     `, [req.user.id]);
 
+    const redeemedStats = await dbGet(`
+      SELECT COALESCE(SUM(points), 0) AS redeemed_points
+      FROM redeemed_rewards
+      WHERE user_id = ?
+    `, [req.user.id]);
+
     const totalPoints = Number(scanStats?.total_points || 0);
+    const redeemedPoints = Number(redeemedStats?.redeemed_points || 0);
+    const availablePoints = Math.max(0, totalPoints - redeemedPoints);
+
     const itemsRecycled = Number(scanStats?.scan_count || 0);
+    // Level is based on lifetime accumulated points (totalPoints)
     const levelInfo = getPointLevel(totalPoints);
     const co2Saved = Number((itemsRecycled * 0.68).toFixed(1));
 
     res.json({
       success: true,
       userPoints: {
-        totalPoints,
+        totalPoints: availablePoints,
         ...levelInfo,
         co2Saved,
         itemsRecycled,
@@ -627,6 +654,55 @@ app.get('/api/eco-points', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Eco points fetch error:', error);
     res.status(500).json({ error: 'Gagal memuat data Eco Poin' });
+  }
+});
+
+// Route: Redeem Reward
+app.post('/api/eco-points/redeem', authenticateToken, async (req, res) => {
+  try {
+    const { rewardId } = req.body;
+    
+    // Find the reward
+    const reward = rewards.find(r => r.id === rewardId);
+    if (!reward) {
+      return res.status(404).json({ error: 'Reward tidak ditemukan' });
+    }
+
+    // Get current available points
+    const scanStats = await dbGet(`
+      SELECT COALESCE(SUM(points), 0) AS total_points
+      FROM scan_history
+      WHERE user_id = ?
+    `, [req.user.id]);
+    
+    const redeemedStats = await dbGet(`
+      SELECT COALESCE(SUM(points), 0) AS redeemed_points
+      FROM redeemed_rewards
+      WHERE user_id = ?
+    `, [req.user.id]);
+
+    const totalPoints = Number(scanStats?.total_points || 0);
+    const redeemedPoints = Number(redeemedStats?.redeemed_points || 0);
+    const availablePoints = Math.max(0, totalPoints - redeemedPoints);
+
+    if (availablePoints < reward.points) {
+      return res.status(400).json({ error: 'Poin Anda tidak mencukupi untuk menukarkan reward ini.' });
+    }
+
+    // Insert into redeemed_rewards
+    await dbRun(`
+      INSERT INTO redeemed_rewards (user_id, reward_id, points)
+      VALUES (?, ?, ?)
+    `, [req.user.id, reward.id, reward.points]);
+
+    res.json({
+      success: true,
+      message: 'Penukaran poin berhasil!',
+      availablePoints: availablePoints - reward.points
+    });
+  } catch (error) {
+    console.error('Redeem error:', error);
+    res.status(500).json({ error: 'Gagal memproses penukaran poin' });
   }
 });
 

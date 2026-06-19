@@ -11,11 +11,12 @@ import {
   Modal,
   LayoutAnimation,
   UIManager,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { fetchEcoPointData, finishRedeem, Reward, startRedeem } from '../store/ecoPointSlice';
+import { fetchEcoPointData, finishRedeem, Reward, startRedeem, redeemReward } from '../store/ecoPointSlice';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { useAuth } from '../context/AuthContext';
 
@@ -199,14 +200,21 @@ export default function EcoPointScreen() {
     setShowConfirmModal(true);
   };
 
-  const handleRedeemConfirm = () => {
+  const handleRedeemConfirm = async () => {
     if (!selectedReward) return;
     setRedeemStep('processing');
-    dispatch(startRedeem(selectedReward.id));
-    setTimeout(() => {
-      dispatch(finishRedeem(selectedReward.points));
-      setRedeemStep('success');
-    }, 1200);
+    try {
+      const resultAction = await dispatch(redeemReward({ token, rewardId: selectedReward.id }));
+      if (redeemReward.fulfilled.match(resultAction)) {
+        setRedeemStep('success');
+      } else {
+        setRedeemStep('confirm');
+        Alert.alert('Gagal Menukar', (resultAction.payload as string) || 'Terjadi kesalahan saat memproses penukaran poin.');
+      }
+    } catch (err) {
+      setRedeemStep('confirm');
+      Alert.alert('Kesalahan', 'Terjadi kesalahan koneksi saat memproses penukaran poin.');
+    }
   };
 
   const closeRedeemModal = () => {

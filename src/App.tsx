@@ -18,6 +18,7 @@ import {
   Inter_800ExtraBold,
 } from '@expo-google-fonts/inter';
 import { Provider } from 'react-redux';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import AppNavigator from './navigation/AppNavigation';
 
@@ -123,13 +124,15 @@ function AppContent() {
 // App utama dibungkus dengan AuthProvider
 export default function App() {
   return (
-    <Provider store={store}>
-      <AuthProvider>
-        <LanguageProvider>
-          <AppContent />
-        </LanguageProvider>
-      </AuthProvider>
-    </Provider>
+    <SafeAreaProvider>
+      <Provider store={store}>
+        <AuthProvider>
+          <LanguageProvider>
+            <AppContent />
+          </LanguageProvider>
+        </AuthProvider>
+      </Provider>
+    </SafeAreaProvider>
   );
 }
 

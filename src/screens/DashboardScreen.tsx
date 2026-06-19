@@ -5,11 +5,11 @@ import {
   View,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   StatusBar,
   Animated,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';

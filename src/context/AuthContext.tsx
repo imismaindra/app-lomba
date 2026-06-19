@@ -76,6 +76,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
 
       if (response.ok && data.success) {
+        const loginResult = await login(email, password);
+        if (!loginResult.success) {
+          return {
+            success: false,
+            error: loginResult.error || 'Registrasi berhasil, tetapi login otomatis gagal',
+          };
+        }
+
         return { success: true };
       } else {
         return { success: false, error: data.error || 'Registrasi gagal' };

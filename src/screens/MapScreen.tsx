@@ -1,19 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
+  Linking,
+  Platform,
+  StatusBar,
   StyleSheet,
   Text,
-  View,
   TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
-  ActivityIndicator,
-  Platform,
-  Linking,
-  Dimensions,
+  View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 
 interface BankSampah {
@@ -26,15 +25,15 @@ interface BankSampah {
   address: string;
 }
 
-const DEFAULT_LATITUDE = -6.2088; // Jakarta Center
+const DEFAULT_LATITUDE = -6.2088;
 const DEFAULT_LONGITUDE = 106.8456;
 
 const BANK_SAMPAH_LOCATIONS: BankSampah[] = [
   {
     id: 1,
     name: 'Bank Sampah Induk Jakarta Pusat',
-    latitude: -6.1950,
-    longitude: 106.8320,
+    latitude: -6.195,
+    longitude: 106.832,
     categories: ['Plastik', 'Kertas', 'Logam'],
     hours: '08:00 - 15:00',
     address: 'Jl. Kali Pasir No.15, Cikini, Jakarta Pusat',
@@ -42,8 +41,8 @@ const BANK_SAMPAH_LOCATIONS: BankSampah[] = [
   {
     id: 2,
     name: 'Bank Sampah Melati Bersih',
-    latitude: -6.2150,
-    longitude: 106.8550,
+    latitude: -6.215,
+    longitude: 106.855,
     categories: ['Organik', 'Plastik', 'Kaca'],
     hours: '09:00 - 16:00',
     address: 'Jl. Tebet Barat Dalam Raya No.12, Tebet, Jakarta Selatan',
@@ -51,8 +50,8 @@ const BANK_SAMPAH_LOCATIONS: BankSampah[] = [
   {
     id: 3,
     name: 'Bank Sampah Hijau Selalu',
-    latitude: -6.1850,
-    longitude: 106.8150,
+    latitude: -6.185,
+    longitude: 106.815,
     categories: ['Plastik', 'Kardus', 'Kertas'],
     hours: '08:00 - 14:00',
     address: 'Jl. Kebon Sirih No.45, Menteng, Jakarta Pusat',
@@ -60,8 +59,8 @@ const BANK_SAMPAH_LOCATIONS: BankSampah[] = [
   {
     id: 4,
     name: 'Bank Sampah Asri Jaya',
-    latitude: -6.2350,
-    longitude: 106.8420,
+    latitude: -6.235,
+    longitude: 106.842,
     categories: ['Logam', 'Kaca', 'Elektronik'],
     hours: '08:00 - 17:00',
     address: 'Jl. Pancoran Timur No.8, Pancoran, Jakarta Selatan',
@@ -69,93 +68,121 @@ const BANK_SAMPAH_LOCATIONS: BankSampah[] = [
   {
     id: 5,
     name: 'Bank Sampah Berkah Daur Ulang',
-    latitude: -6.2020,
-    longitude: 106.8620,
+    latitude: -6.202,
+    longitude: 106.862,
     categories: ['Plastik', 'Logam', 'Kardus'],
     hours: '09:00 - 15:30',
     address: 'Jl. Matraman Raya No.112, Matraman, Jakarta Timur',
   },
 ];
 
+const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const earthRadiusKm = 6371;
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return (earthRadiusKm * c).toFixed(1);
+};
+
 export default function MapScreen() {
   const navigation = useNavigation();
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loadingLocation, setLoadingLocation] = useState(true);
   const [selectedBank, setSelectedBank] = useState<BankSampah | null>(null);
-
   const [mapRegion, setMapRegion] = useState({
     latitude: DEFAULT_LATITUDE,
     longitude: DEFAULT_LONGITUDE,
-    latitudeDelta: 0.05,
-    longitudeDelta: 0.05,
+    latitudeDelta: 0.06,
+    longitudeDelta: 0.06,
   });
 
   useEffect(() => {
-    (async () => {
+    let isMounted = true;
+
+    const resolveLocation = async () => {
       try {
-        let { status } = await Location.requestForegroundPermissionsAsync();
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (!isMounted) return;
+
         if (status !== 'granted') {
           setErrorMsg('Izin lokasi ditolak. Menampilkan peta default.');
-          setLoading(false);
+          setLoadingLocation(false);
           return;
         }
 
-        let loc = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        setLocation(loc);
+        const lastKnownLocation = await Location.getLastKnownPositionAsync();
+        if (lastKnownLocation && isMounted) {
+          setLocation(lastKnownLocation);
+          setMapRegion({
+            latitude: lastKnownLocation.coords.latitude,
+            longitude: lastKnownLocation.coords.longitude,
+            latitudeDelta: 0.04,
+            longitudeDelta: 0.04,
+          });
+        }
+
+        const currentLocation = await Promise.race([
+          Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
+        ]);
+
+        if (!isMounted) return;
+
+        if (!currentLocation) {
+          setErrorMsg(lastKnownLocation ? null : 'GPS lambat. Menampilkan peta default.');
+          setLoadingLocation(false);
+          return;
+        }
+
+        setLocation(currentLocation);
         setMapRegion({
-          latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude,
+          latitude: currentLocation.coords.latitude,
+          longitude: currentLocation.coords.longitude,
           latitudeDelta: 0.04,
           longitudeDelta: 0.04,
         });
       } catch (error) {
-        setErrorMsg('Gagal memuat GPS. Menampilkan peta default.');
+        if (isMounted) {
+          setErrorMsg('Gagal memuat GPS. Menampilkan peta default.');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoadingLocation(false);
+        }
       }
-    })();
+    };
+
+    resolveLocation();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const openDirections = (bank: BankSampah) => {
-    const scheme = Platform.select({
+    const nativeUrl = Platform.select({
       ios: `maps:0,0?q=${bank.name}@${bank.latitude},${bank.longitude}`,
       android: `geo:${bank.latitude},${bank.longitude}?q=${bank.latitude},${bank.longitude}(${bank.name})`,
     });
     const webUrl = `https://www.google.com/maps/search/?api=1&query=${bank.latitude},${bank.longitude}`;
-    const url = scheme || webUrl;
+    const url = nativeUrl || webUrl;
 
     Linking.canOpenURL(url).then((supported) => {
-      if (supported) {
-        Linking.openURL(url);
-      } else {
-        Linking.openURL(webUrl);
-      }
+      Linking.openURL(supported ? url : webUrl);
     });
-  };
-
-  const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371; // Radius of earth in km
-    const dLat = (lat2 - lat1) * (Math.PI / 180);
-    const dLon = (lon2 - lon1) * (Math.PI / 180);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * (Math.PI / 180)) *
-        Math.cos(lat2 * (Math.PI / 180)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const d = R * c;
-    return d.toFixed(1); // returns in km
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F4FAF6" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -172,42 +199,42 @@ export default function MapScreen() {
       </View>
 
       <View style={styles.mapContainer}>
-        {loading ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color="#10B981" />
-            <Text style={styles.loadingText}>Mencari koordinat GPS Anda...</Text>
-          </View>
-        ) : (
-          <MapView
-            style={styles.map}
-            region={mapRegion}
-            showsUserLocation={!!location}
-            showsMyLocationButton={!!location}
-            onPress={() => setSelectedBank(null)}
-          >
-            {BANK_SAMPAH_LOCATIONS.map((bank) => (
-              <Marker
-                key={bank.id}
-                coordinate={{ latitude: bank.latitude, longitude: bank.longitude }}
-                title={bank.name}
-                description={bank.address}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  setSelectedBank(bank);
-                }}
-              >
-                <View style={styles.customMarker}>
-                  <View style={styles.markerCircle}>
-                    <Ionicons name="trash" size={16} color="#FFFFFF" />
-                  </View>
-                  <View style={styles.markerArrow} />
+        <MapView
+          provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+          style={styles.map}
+          region={mapRegion}
+          showsUserLocation={!!location}
+          showsMyLocationButton={!!location}
+          onPress={() => setSelectedBank(null)}
+        >
+          {BANK_SAMPAH_LOCATIONS.map((bank) => (
+            <Marker
+              key={bank.id}
+              coordinate={{ latitude: bank.latitude, longitude: bank.longitude }}
+              title={bank.name}
+              description={bank.address}
+              onPress={(event) => {
+                event.stopPropagation();
+                setSelectedBank(bank);
+              }}
+            >
+              <View style={styles.customMarker}>
+                <View style={styles.markerCircle}>
+                  <Ionicons name="trash" size={16} color="#FFFFFF" />
                 </View>
-              </Marker>
-            ))}
-          </MapView>
+                <View style={styles.markerArrow} />
+              </View>
+            </Marker>
+          ))}
+        </MapView>
+
+        {loadingLocation && (
+          <View style={styles.locationStatus}>
+            <ActivityIndicator size="small" color="#10B981" />
+            <Text style={styles.locationStatusText}>Mencari GPS...</Text>
+          </View>
         )}
 
-        {/* Floating Info Sheet for Selected Bank Sampah */}
         {selectedBank && (
           <View style={styles.infoSheet}>
             <View style={styles.sheetHeader}>
@@ -217,7 +244,7 @@ export default function MapScreen() {
                 </Text>
                 {location && (
                   <Text style={styles.sheetDistance}>
-                    📍 Jarak: {getDistance(
+                    Jarak: {getDistance(
                       location.coords.latitude,
                       location.coords.longitude,
                       selectedBank.latitude,
@@ -227,10 +254,7 @@ export default function MapScreen() {
                   </Text>
                 )}
               </View>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setSelectedBank(null)}
-              >
+              <TouchableOpacity style={styles.closeButton} onPress={() => setSelectedBank(null)}>
                 <Ionicons name="close" size={20} color="#94A3B8" />
               </TouchableOpacity>
             </View>
@@ -272,7 +296,7 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F4FAF6',
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
@@ -283,6 +307,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
     backgroundColor: '#FFFFFF',
+    zIndex: 2,
   },
   backButton: {
     width: 40,
@@ -298,13 +323,16 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#1E4E2C',
+    fontFamily: 'GeistSans-Bold',
   },
   headerSubtitle: {
     fontSize: 11,
     color: '#E53E3E',
     marginTop: 1,
+    textAlign: 'center',
+    fontFamily: 'GeistSans-Regular',
   },
   placeholder: {
     width: 40,
@@ -312,21 +340,35 @@ const styles = StyleSheet.create({
   mapContainer: {
     flex: 1,
     position: 'relative',
+    backgroundColor: '#EAF2EC',
   },
   map: {
-    width: '100%',
-    height: '100%',
+    ...StyleSheet.absoluteFillObject,
   },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  locationStatus: {
+    position: 'absolute',
+    top: 16,
+    alignSelf: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
     backgroundColor: '#FFFFFF',
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#D1FAE5',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
   },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#64748B',
+  locationStatusText: {
+    fontSize: 12,
+    color: '#047857',
+    fontWeight: '700',
+    fontFamily: 'GeistSans-Bold',
   },
   customMarker: {
     alignItems: 'center',
@@ -388,14 +430,16 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#133B1C',
+    fontFamily: 'GeistSans-Bold',
   },
   sheetDistance: {
     fontSize: 12,
     color: '#10B981',
     fontWeight: '600',
     marginTop: 4,
+    fontFamily: 'GeistSans-SemiBold',
   },
   closeButton: {
     width: 28,
@@ -410,6 +454,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
     lineHeight: 18,
     marginBottom: 12,
+    fontFamily: 'GeistSans-Regular',
   },
   divider: {
     height: 1,
@@ -433,6 +478,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748B',
     flex: 1,
+    fontFamily: 'GeistSans-Regular',
   },
   navigateButton: {
     flexDirection: 'row',
@@ -447,5 +493,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '700',
     fontSize: 14,
+    fontFamily: 'GeistSans-Bold',
   },
 });

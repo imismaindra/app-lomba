@@ -7,12 +7,12 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
-  SafeAreaView,
   StatusBar,
   Modal,
   LayoutAnimation,
   UIManager,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchEcoPointData, finishRedeem, Reward, startRedeem } from '../store/ecoPointSlice';

@@ -59,7 +59,7 @@ const linking = {
   },
 };
 
-function MainTabs() {
+function MainTabs({ showToast }: AppNavigatorProps) {
   return (
     <Tab.Navigator
       initialRouteName="Dashboard"
@@ -72,7 +72,9 @@ function MainTabs() {
       <Tab.Screen name="History" component={HistoryScreen} />
       <Tab.Screen name="Scan" component={ScanScreen} />
       <Tab.Screen name="Eco Poin" component={EcoPointScreen} />
-      <Tab.Screen name="Profil" component={ProfileScreen} />
+      <Tab.Screen name="Profil">
+        {() => <ProfileScreen showToast={showToast} />}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 }
@@ -85,7 +87,9 @@ export default function AppNavigator({ showToast }: AppNavigatorProps) {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
           <>
-            <Stack.Screen name="MainTabs" component={MainTabs} />
+            <Stack.Screen name="MainTabs">
+              {() => <MainTabs showToast={showToast} />}
+            </Stack.Screen>
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
             <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />

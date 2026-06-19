@@ -4,11 +4,11 @@ import {
   Text,
   View,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
   ScrollView,
   Linking,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
@@ -184,14 +184,16 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#1E4E2C',
+    fontFamily: 'GeistSans-Bold',
   },
   headerSubtitle: {
     fontSize: 11,
     color: '#64748B',
     marginTop: 2,
     textAlign: 'center',
+    fontFamily: 'GeistSans-Regular',
   },
   placeholder: {
     width: 40,
@@ -219,12 +221,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#133B1C',
     lineHeight: 18,
+    fontFamily: 'GeistSans-Regular',
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '800',
     color: '#133B1C',
     marginBottom: 16,
+    fontFamily: 'GeistSans-Bold',
   },
   gridContainer: {
     gap: 16,
@@ -252,14 +256,16 @@ const styles = StyleSheet.create({
   },
   bankName: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#1E4E2C',
+    fontFamily: 'GeistSans-Bold',
   },
   bankAddress: {
     fontSize: 13,
     color: '#64748B',
     lineHeight: 18,
     marginBottom: 12,
+    fontFamily: 'GeistSans-Regular',
   },
   divider: {
     height: 1,
@@ -279,6 +285,7 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: 12,
     color: '#64748B',
+    fontFamily: 'GeistSans-Regular',
   },
   navigateButton: {
     flexDirection: 'row',
@@ -293,5 +300,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '700',
     fontSize: 13,
+    fontFamily: 'GeistSans-Bold',
   },
 });

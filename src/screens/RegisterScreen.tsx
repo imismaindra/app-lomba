@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
@@ -51,25 +52,25 @@ export default function RegisterScreen({
     setLoading(false);
 
     if (result.success) {
-      showToast('Registrasi berhasil! Silakan masuk.', 'success');
+      showToast('Registrasi berhasil! Selamat datang.', 'success');
       setUsername('');
       setEmail('');
       setPassword('');
       setConfirmPassword('');
-      navigation.navigate('Login');
     } else {
       showToast(result.error || 'Registrasi gagal. Coba lagi.', 'error');
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.flex1}
-    >
-      {/* Soft pastel ambient background glows */}
-      <View style={styles.glowCircle1} />
-      <View style={styles.glowCircle2} />
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.flex1}
+      >
+        {/* Soft pastel ambient background glows */}
+        <View style={styles.glowCircle1} />
+        <View style={styles.glowCircle2} />
 
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         {/* Header Logo */}
@@ -209,11 +210,16 @@ export default function RegisterScreen({
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
   flex1: {
     flex: 1,
   },

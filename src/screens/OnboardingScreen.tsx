@@ -6,8 +6,8 @@ import {
   Text,
   View,
   TouchableOpacity,
-  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
@@ -108,7 +108,7 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <View style={styles.onboardingContainer}>
+    <SafeAreaView style={styles.onboardingContainer}>
       {/* Top Area: Skip Button */}
       <View style={styles.onboardingHeader}>
         <TouchableOpacity onPress={animateToLogin} style={styles.skipBtn} disabled={isAnimating}>
@@ -163,7 +163,7 @@ export default function OnboardingScreen() {
           <Ionicons name="arrow-forward" size={18} color="#38a154" style={{ marginLeft: 6 }} />
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -174,7 +174,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 20 : 40,
     paddingBottom: 40,
   },
   onboardingHeader: {

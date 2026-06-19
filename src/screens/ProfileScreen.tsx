@@ -1,5 +1,6 @@
-import React, { useCallback } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, StatusBar, Alert, Platform } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, StatusBar, Modal, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
@@ -32,11 +33,16 @@ const CustomProgressBar = ({ progress, color }: { progress: number; color: strin
   );
 };
 
-export default function ProfileScreen() {
+interface ProfileScreenProps {
+  showToast?: (message: string, type?: 'success' | 'error') => void;
+}
+
+export default function ProfileScreen({ showToast }: ProfileScreenProps) {
   const navigation = useNavigation<any>();
   const { user, logout, token } = useAuth();
   const { t } = useLanguage();
   const dispatch = useAppDispatch();
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
 
   // Get live stats from Redux
   const { userPoints } = useAppSelector((state) => state.ecoPoint);
@@ -105,26 +111,19 @@ export default function ProfileScreen() {
     },
   ];
 
+  const performLogout = async () => {
+    console.log('Logging out user...');
+    setIsLogoutModalVisible(false);
+    showToast?.('Logout berhasil. Sampai jumpa!', 'success');
+    await logout();
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.history.replaceState(null, '', '/');
+    }
+  };
+
   const handleLogout = () => {
-    Alert.alert(
-      t('profile.logout') || 'Keluar Akun',
-      'Apakah Anda yakin ingin keluar dari sesi akun saat ini?',
-      [
-        {
-          text: 'Batal',
-          style: 'cancel',
-        },
-        {
-          text: 'Keluar',
-          style: 'destructive',
-          onPress: () => {
-            console.log('Logging out user...');
-            logout();
-          },
-        },
-      ],
-      { cancelable: true }
-    );
+    setIsLogoutModalVisible(true);
   };
 
   return (
@@ -292,6 +291,42 @@ export default function ProfileScreen() {
 
         <Text style={styles.versionText}>Echo Tech v1.0.0</Text>
       </ScrollView>
+
+      <Modal
+        transparent
+        animationType="fade"
+        visible={isLogoutModalVisible}
+        onRequestClose={() => setIsLogoutModalVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.logoutModal}>
+            <View style={styles.logoutModalIcon}>
+              <Ionicons name="log-out-outline" size={28} color="#EF4444" />
+            </View>
+            <Text style={styles.logoutModalTitle}>Keluar Akun?</Text>
+            <Text style={styles.logoutModalText}>
+              Anda akan keluar dari sesi akun saat ini dan kembali ke halaman awal.
+            </Text>
+
+            <View style={styles.logoutModalActions}>
+              <TouchableOpacity
+                style={styles.cancelLogoutButton}
+                onPress={() => setIsLogoutModalVisible(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.cancelLogoutText}>Batal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.confirmLogoutButton}
+                onPress={performLogout}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.confirmLogoutText}>Keluar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -569,5 +604,86 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: 20,
     fontFamily: 'GeistSans-Regular',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  logoutModal: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 22,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.18,
+    shadowRadius: 28,
+    elevation: 10,
+  },
+  logoutModalIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FEF2F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  logoutModalTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#0F172A',
+    fontFamily: 'GeistSans-Bold',
+  },
+  logoutModalText: {
+    marginTop: 8,
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#64748B',
+    textAlign: 'center',
+    fontFamily: 'GeistSans-Regular',
+  },
+  logoutModalActions: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 10,
+    marginTop: 20,
+  },
+  cancelLogoutButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelLogoutText: {
+    color: '#334155',
+    fontSize: 14,
+    fontWeight: '800',
+    fontFamily: 'GeistSans-Bold',
+  },
+  confirmLogoutButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmLogoutText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+    fontFamily: 'GeistSans-Bold',
   },
 });

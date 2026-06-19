@@ -54,7 +54,8 @@ yarn-error.*
 /backend/uploads/
 /backend/*.sqlite
 /backend/*.sqlite-*
-
+#builld config
+app.json
 # local/editor files
 /.claude/
 /.vscode/
